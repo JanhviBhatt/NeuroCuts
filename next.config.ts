@@ -1,7 +1,9 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+module.exports = {
+  experimental: {
+    serverActions: true,
+  },
+  env: {
+    DATABASE_URL: process.env.DATABASE_URL,
+  },
 };
 
-export default nextConfig;

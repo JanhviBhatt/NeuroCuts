@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { NextResponse } from "next/server";
 
 cloudinary.config({
     cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -9,31 +10,40 @@ cloudinary.config({
 export async function POST(request) {
     try {
         const formData = await request.formData();
-        const file = formData.get("file");
 
-        if (!file) {
-            return new Response(JSON.stringify({ error: "File is required" }), { status: 400 });
-        }
 
         // Convert file to Buffer
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+        const files = formData.getAll('images')
 
-        return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                { resource_type: "image" }, 
-                (error, result) => {
-                    if (error) {
-                        reject(new Response(JSON.stringify({ error: error.message }), { status: 500 }));
-                    } else {
-                        resolve(new Response(JSON.stringify(result), { status: 200 }));
-                    }
-                }
-            );
-            uploadStream.end(buffer);
-        });
+        if(!files || files.length===0){
+          return NextResponse.json({success:false,message:"Please upload images"})
+        }
+   
+        const result = await Promise.all(
+          files.map(async (file) => {
+             const arrayBuffer = await file.arrayBuffer()
+             const buffer = Buffer.from(arrayBuffer)
+  
+             return new Promise((resolve, reject) => {
+               const stream = cloudinary.uploader.upload_stream(
+                  {resource_type: 'auto'},
+                  (error,result) => {
+                       if(error){
+                          reject(error)
+                       }else{
+                          resolve(result)
+                       }
+                  }
+               )
+               stream.end(buffer) // send the buffer to cloudinary
+             })
+          })
+        )
+       const image = result.map(result => result.secure_url)
+
+       return NextResponse.json({ success: true, image: image });
 
     } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

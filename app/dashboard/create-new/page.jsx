@@ -1,20 +1,25 @@
 'use client'
-import React from 'react'
+import React, { useContext, useEffect } from 'react'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid';
 import CustomLoading from './_components/CustomLoading'
 import SelectTopic from './_components/SelectTopic'
 import SelectStyle from './_components/SelectStyle'
 import SelectDuration from './_components/SelectDuration'
+import { VideoDataContext } from '@/app/_context/VideoDataContext'
+import { db } from '@/configs/db';
+import { VideoData } from '@/configs/db/schema';
+import { useUser } from '@clerk/nextjs';
 
 const CreateNew = () => {
-  const FILEURL = "https://res.cloudinary.com/dh94ebwua/raw/upload/v1743134083/udvnyx2ynnygecliyzek.mp3"
+  const {user}= useUser()
   const [formData, setFormData] = React.useState([])
   const [audioUrl, setAudioUrl] = React.useState(null)
   const [videoScript, setVideoScript] = React.useState()
   const [loading, setLoading] = React.useState(false)
   const [captions, setCaptions] = React.useState()
   const [imageList, setImageList] = React.useState([])
+  const {videoData, setVideoData} = useContext(VideoDataContext)
   const onHandleInputChange = (fieldName, fieldValue) => {
     console.log(fieldName, fieldValue)
 
@@ -24,8 +29,7 @@ const CreateNew = () => {
     })
   }
   const createShortVideo = () => {
-    // getVideoScript()
-    GenerateImage()
+    getVideoScript()
   }
 
   // Create Video Functionality Here
@@ -41,7 +45,10 @@ const CreateNew = () => {
         if (!res.data || !Array.isArray(res.data.result)) {
           throw new Error("Invalid response: Expected an array but got " + typeof res.data.result);
         }
-
+        setVideoData(prev=>({
+          ...prev,
+          'videoScript': res.data.result,
+        }))
         setVideoScript(res.data.result);
         generateAudioFile(res.data.result);
       } catch (error) {
@@ -92,10 +99,13 @@ const CreateNew = () => {
         headers: { "Content-Type": "multipart/form-data" },
       }
       );
-
+      setVideoData(prev=>({
+        ...prev,
+        'audioUrl': cloudinaryResponse.data.secure_url,
+      }))
       console.log("Cloudinary Response:", cloudinaryResponse);
       setAudioUrl(cloudinaryResponse.data.secure_url);
-      cloudinaryResponse.data.secure_url && GenerateAudioCaption(cloudinaryResponse.data.secure_url)
+      cloudinaryResponse.data.secure_url && GenerateAudioCaption(cloudinaryResponse.data.secure_url,videoScript)
     }
     catch (error) {
       console.error("Error generating speech:", error);
@@ -104,45 +114,65 @@ const CreateNew = () => {
   }
 
 
-  const GenerateAudioCaption = async (fileUrl) => {
+  const GenerateAudioCaption = async (fileUrl,videoScript) => {
     setLoading(true)
     await axios.post('/api/get-caption', {
       audioUrl: fileUrl
     }).then(res => {
       console.log(res.data.result)
       setCaptions(res.data.result)
-      GenerateImage()
+      setVideoData(prev=>({
+        ...prev,
+        'captions': res.data.result
+      }))
+      GenerateImage(videoScript)
     })
   }
-  const videoSCRIPT = [
-    {
-      "scene": 1,
-      "duration": 5,
-      "content_text": "Cleopatra wasn't Egyptian! She was actually Greek, descended from the Ptolemaic dynasty that ruled Egypt after Alexander the Great.",
-      "image_prompt": "Comic book style illustration, Cleopatra, with distinct Greek features, wearing Egyptian royal attire, puzzled expression, pyramids in the background, speech bubble saying 'Wait, I'm Greek?', vibrant colors, dynamic pose"
-    },
-    {
-      "scene": 2,
-      "duration": 5,
-      "content_text": "The Great Emu War of 1932! The Australian military deployed soldiers to combat a population explosion of emus ravaging farmland. They lost!",
-      "image_prompt": "Comic book style illustration, Australian soldiers firing machine guns at a flock of emus, comical expressions of fear and surprise on the soldiers' faces, emus running rampant, rural Australian landscape, bright sunshine, exaggerated action lines, humorous style"
-    },
-    
-  ]
-  const GenerateImage = async () => {
-    let images = []
-    videoSCRIPT.forEach(async(element)=>{
-      await axios.post('/api/generate-image',{
-        prompt:element?.image_prompt
-      }).then(res=>{
-        console.log(res.data)
-        images.push(res.data.result)
-      })
-    })
-    console.log(images)
-    setImageList(images)
+  
+  const GenerateImage = async (videoScript) => {
+    try {
+      const imageResponses = await Promise.all(
+        videoScript.map(async (element) => {
+          const res = await axios.post('/api/generate-image', {
+            prompt: element?.image_prompt,
+          });
+          console.log("Image generated:", res.data.result);
+          return res.data.result; //  this will be added to the array
+        })
+      );
+  
+      // Now all image URLs are collected
+      setImageList(imageResponses);
+      setVideoData(prev=>({
+        ...prev,
+        'imageList': imageResponses,
+      }))
+      console.log(images, videoScript,audioUrl,captions);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error generating images:", err);
+    }
+  };
+
+  useEffect(()=>{
+    console.log(videoData)
+    if(Object.keys(videoData).length==4){
+      SaveVideoData(videoData)
+    }
+  },[videoData])
+
+  const SaveVideoData= async(videoData)=>{
+    setLoading(true)
+    const result = await db.insert(VideoData).values({
+      script:videoData?.videoScript,
+      audioUrl:videoData?.audioUrl,
+      captions:videoData?.captions,
+      imageList:videoData?.imageList,
+      createdBy: user?.primaryEmailAddress?.emailAddress
+    }).returning({id:VideoData?.id})
+    console.log(result)
     setLoading(false)
-};
+  }
 
 
   return (
@@ -166,9 +196,9 @@ const CreateNew = () => {
             </audio>
           </div>
         )}
-       {imageList.map((image, index) => (
-    <img key={index} src={image} alt="Generated Image" style={{ width: "200px", height: "200px" }} />
-))}
+        {imageList.map((image, index) => (
+          <img key={index} src={image} alt="Generated Image" style={{ width: "200px", height: "200px" }} />
+        ))}
 
       </div>
       <CustomLoading loading={loading} />

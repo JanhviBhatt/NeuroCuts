@@ -1,6 +1,6 @@
 module.exports = {
   experimental: {
-    serverActions: true,
+    serverActions: {},
   },
   env: {
     DATABASE_URL: process.env.DATABASE_URL,

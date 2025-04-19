@@ -11,6 +11,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@clerk/clerk-js": "^5.61.2",
     "@clerk/nextjs": "^6.12.8",
     "@electric-sql/pglite": "^0.2.17",
     "@google-cloud/text-to-speech": "^6.0.1",
@@ -25,6 +26,7 @@
     "axios": "^1.8.4",
     "buffer": "^6.0.3",
     "class-variance-authority": "^0.7.1",
+    "clerk": "^0.8.3",
     "cloudinary": "^2.6.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",

@@ -10,6 +10,7 @@ import { VideoDataContext } from '@/app/_context/VideoDataContext'
 import { db } from '@/configs/db';
 import { VideoData } from '@/configs/db/schema';
 import { useUser } from '@clerk/nextjs';
+import PlayerDialog from '../_components/PlayerDialog'
 
 const CreateNew = () => {
   const {user}= useUser()
@@ -20,6 +21,8 @@ const CreateNew = () => {
   const [captions, setCaptions] = React.useState()
   const [imageList, setImageList] = React.useState([])
   const {videoData, setVideoData} = useContext(VideoDataContext)
+  const [playVideo, setPlayVideo] = React.useState(true)
+  const [videoId, setVideoId] = React.useState(1)
   const onHandleInputChange = (fieldName, fieldValue) => {
     console.log(fieldName, fieldValue)
 
@@ -28,6 +31,7 @@ const CreateNew = () => {
       [fieldName]: fieldValue
     })
   }
+
   const createShortVideo = () => {
     getVideoScript()
   }
@@ -121,11 +125,17 @@ const CreateNew = () => {
     }).then(res => {
       console.log(res.data.result)
       setCaptions(res.data.result)
-      setVideoData(prev=>({
-        ...prev,
-        'captions': res.data.result
-      }))
+      const updatedData = {
+      ...videoData,
+      captions: res.data.result,
+    };
+    if(res.data.result){
+      setVideoData(updatedData);
       GenerateImage(videoScript)
+    }else {
+      setLoading(false)
+      console.error("Error: No captions found in the response.");
+    }
     })
   }
   
@@ -147,7 +157,7 @@ const CreateNew = () => {
         ...prev,
         'imageList': imageResponses,
       }))
-      console.log(images, videoScript,audioUrl,captions);
+      console.log(imageResponses, videoScript,audioUrl,captions);
       setLoading(false);
     } catch (err) {
       console.error("Error generating images:", err);
@@ -156,28 +166,47 @@ const CreateNew = () => {
 
   useEffect(()=>{
     console.log(videoData)
-    if(Object.keys(videoData).length==4){
+    if( videoData?.videoScript &&
+    videoData?.audioUrl &&
+    videoData?.captions &&
+    videoData?.imageList?.length > 0){
       SaveVideoData(videoData)
     }
   },[videoData])
 
-  const SaveVideoData= async(videoData)=>{
-    setLoading(true)
-    const result = await db.insert(VideoData).values({
-      script:videoData?.videoScript,
-      audioUrl:videoData?.audioUrl,
-      captions:videoData?.captions,
-      imageList:videoData?.imageList,
-      createdBy: user?.primaryEmailAddress?.emailAddress
-    }).returning({id:VideoData?.id})
-    console.log(result)
-    setLoading(false)
+const SaveVideoData = async (videoData) => {
+  const { videoScript, audioUrl, captions, imageList } = videoData;
+
+  if (!videoScript || !audioUrl || !captions || !imageList?.length) {
+    console.warn("Missing data in videoData, skipping save.", videoData);
+    return;
   }
+
+  try {
+    setLoading(true);
+    const result = await db.insert(VideoData).values({
+      script: videoScript,
+      audioUrl: audioUrl,
+      captions: captions,
+      imageList: imageList,
+      createdBy: user?.primaryEmailAddress?.emailAddress,
+    }).returning({ id: VideoData.id });
+
+    setVideoId(result[0].id)
+    setPlayVideo(true)
+
+    console.log(" Saved videoData to DB:", result);
+  } catch (error) {
+    console.error(" Error saving video data to DB:", error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (
-    <div className='md:px-20'>
-      <h2>Create New</h2>
+    <div className='md:px-20 py-10'>
 
       <div className='mt-10 shadow-md p-10'>
         {/* Select Topic */}
@@ -202,6 +231,7 @@ const CreateNew = () => {
 
       </div>
       <CustomLoading loading={loading} />
+      <PlayerDialog playVideo={playVideo} videoId={videoId} />
     </div>
   )
 }

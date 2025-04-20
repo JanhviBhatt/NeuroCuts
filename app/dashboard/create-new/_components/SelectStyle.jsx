@@ -1,28 +1,29 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 
+
 const SelectStyle = ({onUserSelect}) => {
      const [selectedOption, setSelectedOption] = useState()
     const styleOptions =[
         {
-            name: 'Realisitic',
-            image:'/'
+            name: 'Realistic',
+            image:'/assets/Realistic.jpeg'
         },
         {
             name: 'Cartoon',
-            image:'/'
+            image:'/assets/Cartoon.jpeg'
         },
         {
             name: 'Comic',
-            image:'/'
+            image:'/assets/Comic.jpeg'
         },
         {
             name: 'WaterColor',
-            image:'/'
+            image:'/assets/Watercolor.jpeg'
         },
         {
             name: 'GTA',
-            image:'/'
+            image:'/assets/GTA.jpeg'
         },
       
     ]

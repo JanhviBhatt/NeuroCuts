@@ -22,7 +22,7 @@ const CreateNew = () => {
   const [imageList, setImageList] = React.useState([])
   const {videoData, setVideoData} = useContext(VideoDataContext)
   const [playVideo, setPlayVideo] = React.useState(true)
-  const [videoId, setVideoId] = React.useState(1)
+  const [videoId, setVideoId] = React.useState(2)
   const onHandleInputChange = (fieldName, fieldValue) => {
     console.log(fieldName, fieldValue)
 
@@ -40,11 +40,9 @@ const CreateNew = () => {
   const getVideoScript = async () => {
     setLoading(true)
     const prompt = 'Write a script to generate ' + formData.duration + ' video on topic : ' + formData.topic + ' along with AI image prompt in ' + formData.imageStyle + ' format for each scene and give me result in json format with image prompt and content text as field';
-    console.log(prompt)
     const result = await axios.post('/api/get-video-script', { prompt: prompt }).then(res => {
 
       try {
-        console.log('data ', res.data.result);
 
         if (!res.data || !Array.isArray(res.data.result)) {
           throw new Error("Invalid response: Expected an array but got " + typeof res.data.result);
@@ -67,7 +65,6 @@ const CreateNew = () => {
     videoScript.forEach((scene) => {
       text += scene.content_text + ' ';
     })
-    console.log(text)
     try {
       const response = await fetch("/api/generate-audio", {
         method: "POST",
@@ -78,8 +75,6 @@ const CreateNew = () => {
           text: text
         }),
       })
-
-      console.log("Full API Response:", response);
 
       if (response.statusText !== 'OK') {
         throw new Error("Failed to generate audio file: " + response.statusText);
@@ -96,7 +91,6 @@ const CreateNew = () => {
 
       const formData = new FormData();
       formData.append("file", audioBlob);
-
       const cloudinaryResponse = await axios.post(
         "/api/audio-upload",
         formData, {
@@ -107,7 +101,6 @@ const CreateNew = () => {
         ...prev,
         'audioUrl': cloudinaryResponse.data.secure_url,
       }))
-      console.log("Cloudinary Response:", cloudinaryResponse);
       setAudioUrl(cloudinaryResponse.data.secure_url);
       cloudinaryResponse.data.secure_url && GenerateAudioCaption(cloudinaryResponse.data.secure_url,videoScript)
     }
@@ -118,51 +111,92 @@ const CreateNew = () => {
   }
 
 
-  const GenerateAudioCaption = async (fileUrl,videoScript) => {
-    setLoading(true)
-    await axios.post('/api/get-caption', {
-      audioUrl: fileUrl
-    }).then(res => {
-      console.log(res.data.result)
-      setCaptions(res.data.result)
-      const updatedData = {
-      ...videoData,
-      captions: res.data.result,
-    };
-    if(res.data.result){
-      setVideoData(updatedData);
-      GenerateImage(videoScript)
-    }else {
-      setLoading(false)
-      console.error("Error: No captions found in the response.");
+  const GenerateAudioCaption = async (fileUrl, videoScript) => {
+    try {
+      setLoading(true);
+  
+      const response = await axios.post('/api/get-caption', {
+        audioUrl: fileUrl,
+      });
+  
+      const result = response.data?.result;
+  
+      if (result && Array.isArray(result)) {
+        setCaptions(result);
+  
+        const updatedData = {
+          ...videoData,
+          captions: result,
+        };
+  
+        setVideoData(prev=>({
+          ...prev,
+          'captions': result,
+        }));
+  
+        // Now move on to generate images
+        await GenerateImage(videoScript);
+      } else {
+        console.error("Error: No valid captions found in the response.");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error generating captions:", error);
+      setLoading(false);
     }
-    })
-  }
+  };
+  
   
   const GenerateImage = async (videoScript) => {
     try {
+      if (!Array.isArray(videoScript) || videoScript.length === 0) {
+        throw new Error("Invalid videoScript data provided for image generation.");
+      }
+  
+      setLoading(true);
+  
       const imageResponses = await Promise.all(
-        videoScript.map(async (element) => {
-          const res = await axios.post('/api/generate-image', {
-            prompt: element?.image_prompt,
+        videoScript.map(async (scene, index) => {
+          if (!scene?.image_prompt) {
+            console.warn(`Missing image prompt for scene ${index}`);
+            return null;
+          }
+  
+          const response = await axios.post('/api/generate-image', {
+            prompt: scene.image_prompt,
           });
-          console.log("Image generated:", res.data.result);
-          return res.data.result; //  this will be added to the array
+  
+          const imageUrl = response.data?.result;
+  
+          if (!imageUrl) {
+            console.warn(`No image URL returned for scene ${index}`);
+            return null;
+          }
+  
+          return imageUrl;
         })
       );
   
-      // Now all image URLs are collected
-      setImageList(imageResponses);
-      setVideoData(prev=>({
+      const validImageList = imageResponses.filter(Boolean); // remove nulls if any
+  
+      if (validImageList.length === 0) {
+        throw new Error("No valid images generated.");
+      }
+  
+      setImageList(validImageList);
+  
+      setVideoData(prev => ({
         ...prev,
-        'imageList': imageResponses,
-      }))
-      console.log(imageResponses, videoScript,audioUrl,captions);
-      setLoading(false);
-    } catch (err) {
-      console.error("Error generating images:", err);
+        imageList: validImageList,
+      }));
+  
+    } catch (error) {
+      console.error(" Error generating images:", error);
+    } finally {
+      setLoading(false); // always turn off loading spinner
     }
   };
+  
 
   useEffect(()=>{
     console.log(videoData)

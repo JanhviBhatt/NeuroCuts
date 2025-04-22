@@ -27,7 +27,7 @@ export async function POST(req) {
       )
     }
 
-    console.log("📝 Captions (words):", transcript.words)
+    console.log("Captions (words):", transcript.words)
 
     return NextResponse.json({ result: transcript.words })
   } catch (error) {

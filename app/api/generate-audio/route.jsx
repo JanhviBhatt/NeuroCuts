@@ -12,7 +12,7 @@ export async function POST(req) {
 
         // Send request to Hugging Face API
         const response = await fetch(
-            "https://router.huggingface.co/hf-inference/models/facebook/fastspeech2-en-ljspeech",
+            "https://api-inference.huggingface.co/models/facebook/fastspeech2-en-ljspeech",
             {
                 headers: {
                     Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`, // Ensure this env var is set

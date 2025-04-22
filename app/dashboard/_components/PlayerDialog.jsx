@@ -17,7 +17,8 @@ import { VideoData } from '@/configs/db/schema';
 
 const PlayerDialog = ({ playVideo, videoId }) => {
     const [openDialog, setOpenDialog] = React.useState(false)
-    const [videoData, setVideoData] = React.useState()
+    const [videoData, setVideoData] = React.useState([])
+    const [durationInFrame, setDurationInFrame] = React.useState(100)
     useEffect(() => {
         setOpenDialog(playVideo)
         videoId&&GetVideoData()
@@ -38,12 +39,17 @@ const PlayerDialog = ({ playVideo, videoId }) => {
                     <DialogDescription>
                     <Player
                             component={RemotionVideo}
-                            durationInFrames={120}
+                            durationInFrames={Number(durationInFrame.toFixed(0))}
                             compositionWidth={300}
                             compositionHeight={450}
                             fps={30}
+                            controls={true}
+                            inputProps={{
+                                ...videoData,
+                                setDurationInFrame:(frameValue)=> setDurationInFrame(frameValue),
+                            }}
                         />
-                        <div className='flex gap-30'>
+                        <div className='flex gap-30 mt-10'>
                             <Button variant="ghost">Cancel</Button>
                             <Button>Export</Button>
                         </div>

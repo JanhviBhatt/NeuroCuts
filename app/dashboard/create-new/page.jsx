@@ -1,5 +1,5 @@
 'use client'
-import React, { useContext, useEffect } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid';
 import CustomLoading from './_components/CustomLoading'
@@ -21,8 +21,9 @@ const CreateNew = () => {
   const [captions, setCaptions] = React.useState()
   const [imageList, setImageList] = React.useState([])
   const {videoData, setVideoData} = useContext(VideoDataContext)
-  const [playVideo, setPlayVideo] = React.useState(true)
+  const [playVideo, setPlayVideo] = React.useState(false)
   const [videoId, setVideoId] = React.useState(2)
+  let isValid = true;
   const onHandleInputChange = (fieldName, fieldValue) => {
     console.log(fieldName, fieldValue)
 
@@ -30,10 +31,13 @@ const CreateNew = () => {
       ...formData,
       [fieldName]: fieldValue
     })
+
+
   }
 
   const createShortVideo = () => {
-    getVideoScript()
+    const isValid = formData.topic && formData.imageStyle && formData.duration;
+    if(isValid) getVideoScript()
   }
 
   // Create Video Functionality Here
@@ -250,19 +254,18 @@ const SaveVideoData = async (videoData) => {
         {/* Duration */}
         <SelectDuration onUserSelect={onHandleInputChange} />
         {/* Create Button */}
-        <button className='bg-blue-500 text-white p-3 mt-10 w-full cursor-pointer' onClick={createShortVideo}>Create Short Video</button>
-        {audioUrl && (
-          <div className="mt-3">
-            <audio controls>
-              <source src={audioUrl} type="audio/mp3" />
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-        )}
-        {imageList.map((image, index) => (
-          <img key={index} src={image} alt="Generated Image" style={{ width: "200px", height: "200px" }} />
-        ))}
+        <button
+  className={`${isValid
+      ? 'bg-blue-500 text-white hover:bg-blue-600'
+      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+  } p-3 mt-10 w-full cursor-pointer rounded transition duration-300`}
+  onClick={createShortVideo}
 
+>
+  Create Short Video
+</button>
+
+      
       </div>
       <CustomLoading loading={loading} />
       <PlayerDialog playVideo={playVideo} videoId={videoId} />

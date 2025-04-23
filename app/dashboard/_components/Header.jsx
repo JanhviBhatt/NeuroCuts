@@ -6,7 +6,7 @@ import { useParams, usePathname } from "next/navigation";
 
 const Header = () => {
     const pathname = usePathname()
-    const isCreateNewPage = pathname === '/dashboard/create-new'
+    const isCreateNewPage = (pathname === '/dashboard/create-new') ||(pathname ==='/account')
 
     return (
         <div className="fixed top-0 w-full z-50 bg-white p-4 px-6 flex items-center justify-between shadow-md">

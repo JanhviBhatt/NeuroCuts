@@ -18,14 +18,9 @@ const SideNav = () => {
             path:'/dashboard/create-new',
             icon:FileVideo
         },
+   
         {
             id:3,
-            name:'Upgrade',
-            path:'/upgrade',
-            icon:ShieldPlus
-        },
-        {
-            id:4,
             name:'Account',
             path:'/account',
             icon:CircleUser

@@ -13,15 +13,16 @@ import { Button } from '@/components/ui/button';
 import { db } from '@/configs/db';
 import { eq } from 'drizzle-orm';
 import { VideoData } from '@/configs/db/schema';
-
+import { useRouter } from 'next/navigation';
 
 const PlayerDialog = ({ playVideo, videoId }) => {
-    const [openDialog, setOpenDialog] = React.useState(false)
+    const [openDialog, setOpenDialog] = React.useState(!playVideo)
     const [videoData, setVideoData] = React.useState([])
     const [durationInFrame, setDurationInFrame] = React.useState(100)
+    const router = useRouter()
     useEffect(() => {
-        setOpenDialog(playVideo)
-        videoId&&GetVideoData()
+       setOpenDialog(!openDialog)
+        videoId && GetVideoData()
     }, [playVideo])
 
     const GetVideoData =async ()=>{
@@ -50,8 +51,7 @@ const PlayerDialog = ({ playVideo, videoId }) => {
                             }}
                         />
                         <div className='flex gap-30 mt-10'>
-                            <Button variant="ghost">Cancel</Button>
-                            <Button>Export</Button>
+                            <Button variant="ghost" onClick={()=>{router.replace('/dashboard'); setOpenDialog(false)}}>Cancel</Button>
                         </div>
                     </DialogDescription>
                 </DialogHeader>

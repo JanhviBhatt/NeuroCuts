@@ -9,7 +9,7 @@ const Provider = ({children}) => {
 
   const {user} = useUser();
   useEffect(()=>{
-    user&&isNewUser();
+    if(user) isNewUser();
   },[user])
 
   const isNewUser = async()=>{

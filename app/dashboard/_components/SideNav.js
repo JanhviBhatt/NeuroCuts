@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import {CircleUser, FileVideo, PanelsTopLeft, ShieldPlus} from 'lucide-react'
+import {CircleUser, FileVideo, PanelsTopLeft} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -32,7 +32,7 @@ const SideNav = () => {
   return (
     <div className='w-64 h-screen shadow-md p-5'>
       <div className='grid gap-3'>
-        {MenuOption.map((item,index)=>(
+        {MenuOption.map((item)=>(
           <Link key={item.id}  href={item.path}>
             <div className={`flex items-center gap-3 p-3 hover:bg-blue-500 hover:text-white rounded-md cursor-pointer ${path === item.path && 'bg-blue-500 text-white'}`}>
                 <item.icon/>

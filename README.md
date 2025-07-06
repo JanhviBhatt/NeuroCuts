@@ -39,7 +39,6 @@ How It Works
 <br>
 
 
-```bash
 # Clone the repo
 git clone https://github.com/JanhviBhatt/NeuroCuts.git
 cd NeuroCuts
@@ -57,6 +56,7 @@ Make sure you have PostgreSQL and all API keys (Cloudinary, HuggingFace) configu
 
 
 <br>
+
 Author
 Janhvi Bhatt
 LinkedIn · GitHub · LeetCode
@@ -64,12 +64,3 @@ LinkedIn · GitHub · LeetCode
 <br>
 License
 This project is open source and available under the MIT License.
-
-markdown
-Copy
-Edit
-
-Let me know if you want to:
-- Add **live demo or video demo links**
-- Include **GIF previews** or **API documentation**
-- Turn it into a **portfolio-style GitHub page** with visuals and UI showcase
